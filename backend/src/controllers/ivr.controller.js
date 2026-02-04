@@ -1,9 +1,6 @@
-const axios = require("axios");
-const fs = require("fs");
-const path = require("path");
-
-const { transcribeAudio, textToSpeech } = require("../services/hasab.service");
-const { askGemini } = require("../services/gemini.service");
+const { getOrCreateSession } = require("../services/ivrSession.service");
+const { handleRecordingFlow, getPromptForState } = require("../services/ivrFlow.service");
+const { logInfo } = require("../utilis/logger");
 
 /**
  * STEP 1: IVR entry point
@@ -12,11 +9,16 @@ const { askGemini } = require("../services/gemini.service");
 exports.ivrEntry = async (req, res) => {
   res.set("Content-Type", "text/xml");
 
-  res.send(`
+  const sessionId = req.body.sessionId || req.body.sessionID || "unknown";
+  const callerNumber = req.body.callerNumber || req.body.phoneNumber || "unknown";
+
+  await getOrCreateSession({ sessionId, callerNumber });
+  logInfo("IVR entry", { sessionId, callerNumber });
+
+  const xmlResponse = `
     <Response>
       <Say language="am-ET">
-        እንኳን ወደ አግሪካ የእርሻ ረዳት በደህና መጡ።
-        ከቢፕ በኋላ ጥያቄዎን ይናገሩ።
+        ${getPromptForState("awaiting_intent")}
       </Say>
 
       <Record
@@ -25,7 +27,10 @@ exports.ivrEntry = async (req, res) => {
         callbackUrl="/api/ivr/recording"
       />
     </Response>
-  `);
+  `;
+
+  logInfo("IVR XML response", { sessionId, xml: xmlResponse });
+  res.send(xmlResponse);
 };
 
 /**
@@ -35,58 +40,39 @@ exports.ivrEntry = async (req, res) => {
 exports.ivrRecording = async (req, res) => {
   try {
     const recordingUrl = req.body.recordingUrl;
+    const sessionId = req.body.sessionId || req.body.sessionID || "unknown";
+    const callerNumber = req.body.callerNumber || req.body.phoneNumber || "unknown";
 
     if (!recordingUrl) {
       throw new Error("No recording URL from Africa’s Talking");
     }
 
-    const uploadDir = path.join(__dirname, "../uploads");
-    const audioPath = path.join(uploadDir, "input.wav");
+    const result = await handleRecordingFlow({ sessionId, callerNumber, recordingUrl });
 
-    // Ensure uploads folder exists
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir);
+    res.set("Content-Type", "text/xml");
+    if (result.type === "play") {
+      const xmlResponse = `
+        <Response>
+          <Play>${result.audioUrl}</Play>
+        </Response>
+      `;
+      logInfo("IVR XML response", { sessionId, xml: xmlResponse });
+      res.send(xmlResponse);
+      return;
     }
 
-    // Download recording
-    const audioResponse = await axios({
-      url: recordingUrl,
-      method: "GET",
-      responseType: "stream"
-    });
-
-    const writer = fs.createWriteStream(audioPath);
-    audioResponse.data.pipe(writer);
-
-    writer.on("finish", async () => {
-      try {
-        // 1️⃣ Speech → Text (Hasab STT)
-        const text = await transcribeAudio(audioPath, "amh");
-
-        // 2️⃣ AI reasoning (Gemini)
-        const ai = await askGemini(text);
-
-        // 3️⃣ Text → Speech (Hasab TTS)
-        const audioUrl = await textToSpeech(
-          ai.response_for_farmer || ai,
-          "amh",
-          "selam"
-        );
-
-        // 4️⃣ Play response
-        res.set("Content-Type", "text/xml");
-        res.send(`
-          <Response>
-            <Play>${audioUrl}</Play>
-          </Response>
-        `);
-
-      } catch (err) {
-        console.error("Processing error:", err);
-        fallback(res);
-      }
-    });
-
+    const xmlResponse = `
+      <Response>
+        <Say language="am-ET">${result.message}</Say>
+        <Record
+          maxLength="20"
+          finishOnKey="#"
+          callbackUrl="/api/ivr/recording"
+        />
+      </Response>
+    `;
+    logInfo("IVR XML response", { sessionId, xml: xmlResponse });
+    res.send(xmlResponse);
   } catch (err) {
     console.error("IVR error:", err);
     fallback(res);
