@@ -1,10 +1,4 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash"
-});
+const { generateContent } = require("../config/gemini");
 
 exports.askGemini = async (message) => {
   const prompt = `
@@ -22,6 +16,26 @@ User message:
 "${message}"
 `;
 
-  const result = await model.generateContent(prompt);
-  return JSON.parse(result.response.text());
+  const text = await generateContent(prompt);
+  return JSON.parse(text);
+};
+
+exports.detectIntent = async (message) => {
+  const prompt = `
+Respond ONLY in valid JSON.
+
+{
+  "language_detected": "",
+  "intent": "farming_advice | sell_crops | register_farmer | check_prices | unknown",
+  "confidence_level": "low | medium | high",
+  "response_for_farmer": "",
+  "follow_up_questions": []
+}
+
+User message:
+"${message}"
+`;
+
+  const text = await generateContent(prompt);
+  return JSON.parse(text);
 };
