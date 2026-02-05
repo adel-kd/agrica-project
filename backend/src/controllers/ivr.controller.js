@@ -4,11 +4,36 @@
  */
 
 const { getOrCreateSession } = require("../services/ivrSession.service");
-const {
-  handleRecordingFlow,
-  getPromptForState,
-} = require("../services/ivrFlow.service");
-const { logInfo, logError } = require("../utilis/logger");
+const { handleRecordingFlow, getPromptForState } = require("../services/ivrFlow.service");
+const { logInfo } = require("../utilis/logger");
+
+const normalizeCallerNumber = (value) => {
+  if (!value || typeof value !== "string") return "unknown";
+
+  const trimmed = value.trim();
+  if (!trimmed) return "unknown";
+
+  // In application/x-www-form-urlencoded payloads, a leading "+" can be parsed as whitespace.
+  if (trimmed[0] === "0" || trimmed.startsWith("251")) {
+    return `+${trimmed.replace(/^\+/, "")}`;
+  }
+
+  return trimmed;
+};
+
+const normalizeCallerNumber = (value) => {
+  if (!value || typeof value !== "string") return "unknown";
+
+  const trimmed = value.trim();
+  if (!trimmed) return "unknown";
+
+  // In application/x-www-form-urlencoded payloads, a leading "+" can be parsed as whitespace.
+  if (trimmed[0] === "0" || trimmed.startsWith("251")) {
+    return `+${trimmed.replace(/^\+/, "")}`;
+  }
+
+  return trimmed;
+};
 
 /**
  * STEP 1: IVR ENTRY POINT
@@ -20,10 +45,8 @@ exports.ivrEntry = async (req, res) => {
   try {
     res.set("Content-Type", "text/xml");
 
-    const sessionId =
-      req.body.sessionId || req.body.sessionID || "unknown-session";
-    const callerNumber =
-      req.body.callerNumber || req.body.phoneNumber || "unknown-caller";
+  const sessionId = req.body.sessionId || req.body.sessionID || "unknown";
+  const callerNumber = normalizeCallerNumber(req.body.callerNumber || req.body.phoneNumber || "unknown");
 
     await getOrCreateSession({ sessionId, callerNumber });
 
@@ -66,39 +89,39 @@ exports.ivrEntry = async (req, res) => {
  */
 exports.ivrRecording = async (req, res) => {
   try {
-    res.set("Content-Type", "text/xml");
-
-    const sessionId =
-      req.body.sessionId || req.body.sessionID || "unknown-session";
-    const callerNumber =
-      req.body.callerNumber || req.body.phoneNumber || "unknown-caller";
-
     const recordingUrl =
       req.body.recordingUrl ||
-      req.body.recording ||
-      req.body.audioUrl;
-
-    logInfo("🎙 IVR RECORDING CALLBACK", {
-      sessionId,
-      callerNumber,
-      recordingUrl,
-      body: req.body,
-    });
+      req.body.RecordingUrl ||
+      req.body.recordingURL ||
+      req.body.recording_url;
+    const sessionId = req.body.sessionId || req.body.sessionID || req.body.session_id || "unknown";
+    const callerNumber = normalizeCallerNumber(
+      req.body.callerNumber || req.body.phoneNumber || req.body.caller || req.body.caller_number || "unknown"
+    );
 
     if (!recordingUrl) {
-      throw new Error("No recording URL received from Africa’s Talking");
+      const xmlResponse = `
+        <Response>
+          <Say language="am-ET">እባክዎ ድምፅዎን እንደገና ይቅዱ።</Say>
+          <Record
+            maxLength="20"
+            finishOnKey="#"
+            callbackUrl="/api/ivr/recording"
+          />
+        </Response>
+      `;
+      logInfo("IVR recording callback missing recordingUrl", {
+        sessionId,
+        callerNumber,
+        bodyKeys: Object.keys(req.body || {})
+      });
+      res.send(xmlResponse);
+      return;
     }
 
-    // 🔁 Core flow (STT → Gemini → State → TTS)
-    const result = await handleRecordingFlow({
-      sessionId,
-      callerNumber,
-      recordingUrl,
-    });
+    const result = await handleRecordingFlow({ sessionId, callerNumber, recordingUrl });
 
-    /**
-     * CASE 1: Play audio (TTS result)
-     */
+    res.set("Content-Type", "text/xml");
     if (result.type === "play") {
       const xmlResponse = `
 <Response>
