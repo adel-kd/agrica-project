@@ -21,19 +21,7 @@ const normalizeCallerNumber = (value) => {
   return trimmed;
 };
 
-const normalizeCallerNumber = (value) => {
-  if (!value || typeof value !== "string") return "unknown";
 
-  const trimmed = value.trim();
-  if (!trimmed) return "unknown";
-
-  // In application/x-www-form-urlencoded payloads, a leading "+" can be parsed as whitespace.
-  if (trimmed[0] === "0" || trimmed.startsWith("251")) {
-    return `+${trimmed.replace(/^\+/, "")}`;
-  }
-
-  return trimmed;
-};
 
 /**
  * STEP 1: IVR ENTRY POINT
