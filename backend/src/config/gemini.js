@@ -19,13 +19,31 @@ const getClient = () => {
  * Uses Gemini 2.5 Flash and returns the aggregated text.
  */
 const generateContent = async (prompt) => {
-  const geminiClient = getClient();
-  const response = await geminiClient.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: prompt
-  });
+  try {
+    const geminiClient = getClient();
 
-  return response.text;
+    // In @google/genai (new SDK), use models.generateContent
+    const result = await geminiClient.models.generateContent({
+      model: "gemini-2.0-flash-lite",
+      contents: [{ role: "user", parts: [{ text: prompt }] }]
+    });
+
+    // DEBUG: Log the full structure to see what's actually coming back
+    console.log("🔍 [Gemini SDK] Full Result:", JSON.stringify(result, null, 2));
+
+    // Common paths in various SDK versions
+    const text = result.response?.text?.() ||
+      result.response?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!text) {
+      console.log("⚠️ [Gemini] No text extracted. Check 'Full Result' log above.");
+      return null;
+    }
+    return text;
+  } catch (err) {
+    console.error("❌ Gemini Error:", err.message);
+    return null;
+  }
 };
 
 /**

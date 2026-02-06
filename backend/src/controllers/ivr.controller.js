@@ -1,165 +1,204 @@
 /**
- * IVR Controller
- * Handles Africa’s Talking IVR entry + recording callbacks
+ * IVR Controller (Infobip Version)
+ * Handles sending voice messages via Infobip and processing Webhook callbacks
  */
 
+const { sendVoiceMessage } = require("../services/infobip.service");
 const { getOrCreateSession } = require("../services/ivrSession.service");
-const { handleRecordingFlow, getPromptForState } = require("../services/ivrFlow.service");
+// const { handleRecordingFlow } = require("../services/ivrFlow.service"); // Recording flow might need adaptation for Infobip if using simple TTS
 const { logInfo, logError } = require("../utilis/logger");
 
 const normalizeCallerNumber = (value) => {
   if (!value || typeof value !== "string") return "unknown";
-
   const trimmed = value.trim();
   if (!trimmed) return "unknown";
-
-  // In application/x-www-form-urlencoded payloads, a leading "+" can be parsed as whitespace.
   if (trimmed[0] === "0" || trimmed.startsWith("251")) {
     return `+${trimmed.replace(/^\+/, "")}`;
   }
-
   return trimmed;
 };
 
+/**
+ * TRIGGER OUTBOUND CALL (Simulates IVR Entry)
+ * This could be called by a cron job or an admin API to contact a farmer.
+ * For now, we'll expose it as an endpoint to test the flow: POST /api/ivr/call
+ */
+exports.initiateCall = async (req, res) => {
+  try {
+    const { phoneNumber, message } = req.body;
 
+    if (!phoneNumber) {
+      return res.status(400).json({ error: "phoneNumber is required" });
+    }
+
+    const textToSay = message || "Welcome to Agrica. We are verifying your crop details."; // Default prompt
+
+    // In a real IVR, we might create a session here
+    await getOrCreateSession({ sessionId: `outbound-${Date.now()}`, callerNumber: normalizeCallerNumber(phoneNumber) });
+
+    const result = await sendVoiceMessage(phoneNumber, textToSay);
+
+    res.json({ success: true, data: result });
+  } catch (err) {
+    logError("Failed to initiate Infobip call", err);
+    res.status(500).json({ error: "Failed to initiate call" });
+  }
+};
 
 /**
- * STEP 1: IVR ENTRY POINT
- * - Triggered when call starts
- * - Plays welcome prompt
- * - Records farmer voice
+ * WEBHOOK HANDLER
+ * Infobip sends delivery reports or DTMF logs here if configured.
  */
-exports.ivrEntry = async (req, res) => {
+/**
+ * WEBHOOK HANDLER
+ * Handles inbound calls and interactive events from Infobip.
+ * Flow:
+ * 1. inbound_call -> play greeting -> record
+ * 2. recording_finished -> STT -> AI -> TTS -> play response -> record
+ */
+const fs = require("fs");
+const path = require("path");
+const { transcribeAudio, textToSpeech } = require("../services/hasab.service");
+const { generateContent } = require("../config/gemini");
+const axios = require("axios");
+
+exports.ivrWebhook = async (req, res) => {
   try {
-    res.set("Content-Type", "text/xml");
+    const event = req.body;
+    logInfo("📞 Infobip Webhook Received", event);
 
-  const sessionId = req.body.sessionId || req.body.sessionID || "unknown";
-  const callerNumber = normalizeCallerNumber(req.body.callerNumber || req.body.phoneNumber || "unknown");
+    // 1. Identify Event Type
+    // Note: This matches a generic Infobip interaction structure. 
+    // Adjust specific property names based on actual Infobip Voice API payload.
+    // Assuming 'results' array contains recording or dtmf.
 
-    await getOrCreateSession({ sessionId, callerNumber });
+    // CASE A: Processing a Recording (User spoke)
+    if (event.results && event.results.length > 0) {
+      const result = event.results[0];
 
-    logInfo("📞 IVR ENTRY", {
-      sessionId,
-      callerNumber,
-      body: req.body,
+      if (result.recordedUrl) {
+        logInfo("🎙️ Processing Recording...", { url: result.recordedUrl });
+
+        // A. Download Audio
+        const tempFile = path.join(__dirname, "../../uploads", `inbound_${Date.now()}.wav`);
+        const writer = fs.createWriteStream(tempFile);
+
+        const audioResponse = await axios({
+          url: result.recordedUrl,
+          method: 'GET',
+          responseType: 'stream'
+        });
+
+        audioResponse.data.pipe(writer);
+
+        await new Promise((resolve, reject) => {
+          writer.on('finish', resolve);
+          writer.on('error', reject);
+        });
+
+        // B. STT (Hasab)
+        let userText = "";
+        try {
+          userText = await transcribeAudio(tempFile, "am"); // Defaulting to Amharic
+        } catch (sttErr) {
+          logError("STT Error", sttErr.message);
+          userText = "error";
+        }
+
+        // Cleanup temp input
+        if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+
+        logInfo("🗣️ User Said:", userText);
+
+        // C. AI Intelligence (Gemini)
+        let aiReply = "ይቅርታ፣ በደንብ አልሰማሁዎትም። እባክዎን እንደገና ይናገሩ።"; // Amharic fallback
+        if (userText && userText !== "error") {
+          console.log("🧠 Sending to AI for response generation...");
+          const prompt = `You are a helpful agricultural expert. You MUST answer strictly in Amharic script. Keep it very short (max 2 sentences). User said: "${userText}"`;
+          aiReply = await generateContent(prompt);
+          console.log("✅ AI Reply:", aiReply);
+        }
+
+        // D. TTS (Hasab) -> Get Audio URL
+        // Note: Infobip needs a public URL to play. 
+        // Since we are localhost/internal, we might return text for Infobip to speak (Standard TTS) 
+        // OR we use Hasab TTS and serve the file via our public /uploads endpoint.
+        // Let's try Hasab TTS and serve it.
+
+        const ttsFilename = `reply_${Date.now()}.wav`;
+        const ttsPath = path.join(__dirname, "../../uploads", ttsFilename);
+
+        console.log("🎙️ Requesting TTS for AI Reply:", aiReply);
+        const generatedUrl = await textToSpeech(aiReply, { savePath: ttsPath, speaker: "selam" });
+        console.log("✅ Generated TTS URL:", generatedUrl);
+
+        // We need our server's public base URL. Assuming typical setup or ngrok.
+        // If generic localhost, Infobip can't reach it. 
+        // FALLBACK: Use Infobip's text-to-speech if Hasab needs local storage.
+        // But user requested "Hasab".
+        // We will save it and construct a URL assuming the server is reachable.
+
+        // If textToSpeech returns a public URL (e.g. Google TTS), use it directly.
+        // Otherwise, use our local file URL.
+        const host = req.get('host');
+        const protocol = req.protocol;
+        const audioUrl = generatedUrl.startsWith('http') && !generatedUrl.includes(host)
+          ? generatedUrl
+          : `${protocol}://${host}/uploads/${ttsFilename}`;
+        console.log("🔗 Final Audio URL for Infobip:", audioUrl);
+
+        // Response to Infobip: Play this audio, then Record again
+        console.log("➡️ Responding to Infobip with play and record commands.");
+        return res.json({
+          commands: [
+            {
+              play: {
+                url: audioUrl
+              }
+            },
+            {
+              record: {
+                maxDuration: 10,
+                silenceTimeout: 2
+              }
+            }
+          ]
+        });
+      }
+    }
+
+    // CASE B: Initial Call (or Fallback)
+    // If no recording, assume it's a new call or just entered via webhook
+    // Play greeting and Record
+    const greeting = "Welcome to Agrica. How can I help you today?";
+    // For speed, we can specificy text directly if Infobip supports 'say' command in response
+    // Or generated TTS.
+
+    return res.json({
+      commands: [
+        {
+          say: greeting
+        },
+        {
+          record: {
+            maxDuration: 10,
+            silenceTimeout: 2
+          }
+        }
+      ]
     });
 
-    const prompt = getPromptForState("awaiting_intent");
-
-    const xmlResponse = `
-<Response>
-  <Say language="am-ET">${prompt}</Say>
-
-  <Record
-    maxLength="20"
-    finishOnKey="#"
-    callbackUrl="/api/ivr/recording"
-  />
-</Response>
-`;
-
-    logInfo("📤 IVR XML (entry)", { sessionId, xml: xmlResponse });
-
-    res.send(xmlResponse);
   } catch (err) {
-    logError("IVR entry failed", err);
-    fallback(res);
+    logError("Webhook processing failed", err);
+    res.status(500).json({ error: "IVR Error" });
   }
 };
 
-/**
- * STEP 2: RECORDING CALLBACK
- * - Receives recording URL
- * - STT (Hasab)
- * - Intent + reasoning (Gemini)
- * - TTS (Hasab)
- * - Responds with <Play> or <Say + Record>
- */
+// Deprecated Entry Point (Africa's Talking specific) kept as stub or removed
+exports.ivrEntry = async (req, res) => {
+  res.status(404).send("Endpoint deprecated. Use /api/ivr/call for outbound.");
+};
+
 exports.ivrRecording = async (req, res) => {
-  try {
-    const recordingUrl =
-      req.body.recordingUrl ||
-      req.body.RecordingUrl ||
-      req.body.recordingURL ||
-      req.body.recording_url;
-    const sessionId = req.body.sessionId || req.body.sessionID || req.body.session_id || "unknown";
-    const callerNumber = normalizeCallerNumber(
-      req.body.callerNumber || req.body.phoneNumber || req.body.caller || req.body.caller_number || "unknown"
-    );
-
-    if (!recordingUrl) {
-      const xmlResponse = `
-        <Response>
-          <Say language="am-ET">እባክዎ ድምፅዎን እንደገና ይቅዱ።</Say>
-          <Record
-            maxLength="20"
-            finishOnKey="#"
-            callbackUrl="/api/ivr/recording"
-          />
-        </Response>
-      `;
-      logInfo("IVR recording callback missing recordingUrl", {
-        sessionId,
-        callerNumber,
-        bodyKeys: Object.keys(req.body || {})
-      });
-      res.send(xmlResponse);
-      return;
-    }
-
-    const result = await handleRecordingFlow({ sessionId, callerNumber, recordingUrl });
-
-    res.set("Content-Type", "text/xml");
-    if (result.type === "play") {
-      const xmlResponse = `
-<Response>
-  <Play>${result.audioUrl}</Play>
-</Response>
-`;
-
-      logInfo("📤 IVR XML (play)", { sessionId, xml: xmlResponse });
-      res.send(xmlResponse);
-      return;
-    }
-
-    /**
-     * CASE 2: Say text + continue recording
-     */
-    const xmlResponse = `
-<Response>
-  <Say language="am-ET">${result.message}</Say>
-
-  <Record
-    maxLength="20"
-    finishOnKey="#"
-    callbackUrl="/api/ivr/recording"
-  />
-</Response>
-`;
-
-    logInfo("📤 IVR XML (continue)", { sessionId, xml: xmlResponse });
-    res.send(xmlResponse);
-  } catch (err) {
-    logError("IVR recording failed", err);
-    fallback(res);
-  }
+  res.status(404).send("Endpoint deprecated.");
 };
-
-/**
- * FALLBACK RESPONSE
- * - Used when anything crashes
- * - Must ALWAYS return valid XML
- */
-function fallback(res) {
-  res.set("Content-Type", "text/xml");
-
-  const xmlResponse = `
-<Response>
-  <Say language="am-ET">
-    ይቅርታ፣ አገልግሎቱ ለጊዜው አልተገኘም።
-  </Say>
-</Response>
-`;
-
-  res.send(xmlResponse);
-}

@@ -14,6 +14,7 @@ export function FarmerDashboard() {
     location: "",
     harvestDate: ""
   });
+  const [imageFiles, setImageFiles] = useState([]); // File state
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -23,15 +24,42 @@ export function FarmerDashboard() {
     setForm((f) => ({ ...f, [name]: value }));
   };
 
+  const onFileChange = (e) => {
+    if (e.target.files) {
+      setImageFiles(Array.from(e.target.files));
+    }
+  };
+
   const onSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setMessage("");
     setError("");
     try {
-      await apiPost("/market/listings", form);
-      setMessage("Your crop has been listed. Gemini can verify once you add photos.");
+      const formData = new FormData();
+      Object.keys(form).forEach(key => formData.append(key, form[key]));
+      imageFiles.forEach(file => formData.append("images", file));
+
+      // Use a custom api call for formData since apiPost might assume JSON
+      // Assuming apiPost handles object, we need headers handling or use apiUpload equivalent
+      // Let's check api.js or just use fetch/axios directly here or use apiUpload if generic
+
+      const token = localStorage.getItem("token"); // If auth is used
+
+      const res = await fetch("http://localhost:5000/api/market/listings", {
+        method: "POST",
+        body: formData,
+        headers: token ? { "Authorization": `Bearer ${token}` } : {}
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed");
+      }
+
+      setMessage("Your crop has been listed. Gemini is verifying your images...");
       setForm((f) => ({ ...f, cropType: "", quantity: "", expectedPrice: "", location: "", harvestDate: "" }));
+      setImageFiles([]);
     } catch (err) {
       console.error(err);
       setError("Failed to create listing. Please check inputs and try again.");
@@ -45,8 +73,7 @@ export function FarmerDashboard() {
       <div>
         <h1 className="text-2xl font-semibold text-slate-50">Farmer dashboard</h1>
         <p className="text-sm text-slate-400 max-w-xl">
-          For farmers with internet access. Farmers without internet can use the IVR shortcode. Fill this
-          simple form to list a crop directly in the marketplace.
+          For farmers with internet access. List your crops and upload photos for faster verification.
         </p>
       </div>
 
@@ -177,13 +204,25 @@ export function FarmerDashboard() {
           />
         </div>
 
+        <div className="space-y-1">
+          <label className="text-xs text-slate-300">Crop Images (Optional - for Verification)</label>
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={onFileChange}
+            className="block w-full text-xs text-slate-200 file:mr-3 file:rounded-full file:border-0 file:bg-slate-800 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-slate-100 hover:file:bg-slate-700"
+          />
+          <p className="text-[10px] text-slate-500">Upload clear photos of your crop for Gemini AI to verify quality.</p>
+        </div>
+
         <div className="flex items-center gap-3 pt-2">
           <button
             type="submit"
             disabled={submitting}
             className="inline-flex items-center justify-center rounded-full bg-primary-600 px-5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-emerald-600/30 hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
           >
-            {submitting ? "Listing crop…" : "List crop"}
+            {submitting ? "Listing crop..." : "List crop"}
           </button>
           {message && <p className="text-[11px] text-emerald-300">{message}</p>}
           {error && <p className="text-[11px] text-red-400">{error}</p>}

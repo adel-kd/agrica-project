@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { apiPost, apiUpload } from "../lib/api";
+import { VoiceRecorder } from "../components/VoiceRecorder";
 
 export function AIAgronomist() {
   const [message, setMessage] = useState("");
@@ -72,23 +73,47 @@ export function AIAgronomist() {
 
       <div className="grid gap-6 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <section className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
-          <h2 className="text-sm font-semibold text-slate-100">Chat with the agronomist</h2>
+          <h2 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
+            Chat with the agronomist
+            <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">Voice enabled</span>
+          </h2>
+
+          {/* Chat List would go here, for now just input/output single turn */}
+
           <form onSubmit={sendChat} className="space-y-3">
-            <textarea
-              rows={3}
-              className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-              placeholder="Describe your crop problem in your own words..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-            />
-            <button
-              type="submit"
-              disabled={loadingChat}
-              className="inline-flex items-center justify-center rounded-full bg-primary-600 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-emerald-600/30 hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-            >
-              {loadingChat ? "Thinking…" : "Ask AI agronomist"}
-            </button>
+            <div className="relative">
+              <textarea
+                rows={3}
+                className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 pr-10"
+                placeholder="Describe your crop problem in your own words..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+              />
+
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={loadingChat}
+                className="flex-1 inline-flex items-center justify-center rounded-full bg-primary-600 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-emerald-600/30 hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              >
+                {loadingChat ? "Thinking..." : "Ask AI"}
+              </button>
+
+              <VoiceRecorder onResponse={(data) => {
+                setMessage(data.user_text || message); // Update text box with STT
+                setReply(data.reply_text);
+                // Audio playback is handled in component or we play it here
+                // The VoiceRecorder below handles the playback logic or returns the url
+                if (data.audio_url) {
+                  const audio = new Audio(window.location.origin.replace(":5173", ":5000") + data.audio_url);
+                  audio.play().catch(e => console.error("Audio play failed", e));
+                }
+              }} />
+            </div>
           </form>
+
           {reply && (
             <div className="mt-3 rounded-xl bg-slate-950/60 border border-slate-800 p-3 text-xs text-slate-100 whitespace-pre-wrap">
               {reply}
