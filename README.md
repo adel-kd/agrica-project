@@ -1,1 +1,0 @@
-# agrica-project
