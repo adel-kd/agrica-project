@@ -16,12 +16,18 @@
         <!-- Header -->
         <header class="header">
             <div class="logo">
-                <div class="logo-icon">🌾</div>
-                <h1>Agrica IVR System</h1>
+                <div class="logo-icon" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: #F0FDF4; border-radius: 8px;">
+                    <img src="/image.png" alt="Agrica IVR Logo" style="width: 100%; height: 100%; object-fit: contain;">
+                </div>
+                <h1 class="logo-title" style="font-size: 1.6rem; font-weight: 700; margin-left: 12px;">Agrica IVR System</h1>
             </div>
-            <div class="status-badge" id="systemStatus">
-                <span class="status-dot"></span>
-                System Ready
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <a href="/" style="color: #059669; text-decoration: none; font-weight: 600; font-size: 0.9rem;">← Back
+                    to Website</a>
+                <div class="status-badge" id="systemStatus">
+                    <span class="status-dot"></span>
+                    System Ready
+                </div>
             </div>
         </header>
 
@@ -29,7 +35,7 @@
         <main class="demo-section">
             <div class="demo-card">
                 <h2>Interactive IVR Demo</h2>
-                <p class="subtitle">Amharic AI-Powered Agricultural Support System</p>
+                <p class="subtitle"> AI-Powered Agricultural Support System</p>
 
                 <!-- Scenario Selector -->
                 <div class="scenario-selector">
@@ -69,7 +75,7 @@
                             📞 Start Call
                         </button>
                         <button class="btn btn-secondary" id="speakBtn" onclick="simulateUserSpeech()" disabled>
-                            🎤 Speak (Amharic)
+                            🎤 Speak with diffrent languages (e.g Amharic)
                         </button>
                         <button class="btn btn-danger" id="endCallBtn" onclick="endCall()" disabled>
                             ❌ End Call
@@ -139,8 +145,8 @@
             <div class="features-grid">
                 <div class="feature-card">
                     <div class="feature-icon">🌍</div>
-                    <h4>Amharic Language</h4>
-                    <p>Full support for native Ethiopian language</p>
+                    <h4>Afican Language</h4>
+                    <p>Full support for native African language</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">🤖</div>

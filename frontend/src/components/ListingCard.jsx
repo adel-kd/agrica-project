@@ -6,25 +6,25 @@ export function ListingCard({ listing }) {
   return (
     <Link
       to={`/market/${listing._id}`}
-      className="group rounded-2xl border border-slate-800 bg-slate-900/40 p-4 hover:border-primary-500 hover:bg-slate-900 transition-colors flex flex-col gap-3"
+      className="group rounded-2xl border border-gray-100 bg-white p-4 hover:border-emerald-300 hover:shadow-sm shadow-emerald-500/5 transition-all flex flex-col gap-3"
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="font-semibold text-slate-50 capitalize">{listing.cropType}</h3>
-          <p className="text-xs text-slate-400">
+          <h3 className="font-semibold text-gray-900 capitalize">{listing.cropType}</h3>
+          <p className="text-xs text-gray-500">
             {listing.quantity} {listing.unit} · {listing.location}
           </p>
         </div>
         {verified && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-400 border border-emerald-500/30">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 border border-emerald-100">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
             Gemini verified
           </span>
         )}
       </div>
-      <div className="flex items-center justify-between text-xs text-slate-300">
+      <div className="flex items-center justify-between text-xs text-gray-600">
         <span className="font-semibold">{listing.expectedPrice.toLocaleString()} ETB</span>
-        <span className="text-slate-500">
+        <span className="text-gray-400">
           {listing.farmer?.region || "Unknown region"}, {listing.farmer?.woreda || "Unknown woreda"}
         </span>
       </div>

@@ -38,20 +38,20 @@ export function Register() {
 
     return (
         <div className="flex min-h-[60vh] items-center justify-center py-12">
-            <div className="w-full max-w-md space-y-8 rounded-2xl border border-slate-800 bg-slate-900/40 p-8 shadow-xl">
+            <div className="w-full max-w-md space-y-8 rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
                 <div className="text-center">
-                    <h2 className="text-2xl font-bold text-slate-100">Create an account</h2>
-                    <p className="mt-2 text-sm text-slate-400">Join Agrica today</p>
+                    <h2 className="text-2xl font-bold text-gray-900">Create an account</h2>
+                    <p className="mt-2 text-sm text-gray-500">Join Agrica today</p>
                 </div>
 
                 <form className="mt-8 space-y-4" onSubmit={handleRegister}>
                     <div>
-                        <label className="text-xs font-semibold text-slate-300">I am a...</label>
+                        <label className="text-xs font-semibold text-gray-700">I am a...</label>
                         <select
                             name="role"
                             value={form.role}
                             onChange={handleChange}
-                            className="mt-1 block w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:ring-primary-500"
+                            className="mt-1 block w-full rounded-xl bg-white border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:ring-emerald-500"
                         >
                             <option value="farmer">Farmer</option>
                             <option value="buyer">Buyer / Consumer</option>
@@ -59,24 +59,24 @@ export function Register() {
                     </div>
 
                     <div>
-                        <label className="text-xs font-semibold text-slate-300">Full Name</label>
+                        <label className="text-xs font-semibold text-gray-700">Full Name</label>
                         <input
                             name="fullName"
                             type="text"
                             required
-                            className="mt-1 block w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:ring-primary-500"
+                            className="mt-1 block w-full rounded-xl bg-white border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:ring-emerald-500"
                             value={form.fullName}
                             onChange={handleChange}
                         />
                     </div>
 
                     <div>
-                        <label className="text-xs font-semibold text-slate-300">Phone Number</label>
+                        <label className="text-xs font-semibold text-gray-700">Phone Number</label>
                         <input
                             name="phoneNumber"
                             type="text"
                             required
-                            className="mt-1 block w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:ring-primary-500"
+                            className="mt-1 block w-full rounded-xl bg-white border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:ring-emerald-500"
                             placeholder="+251..."
                             value={form.phoneNumber}
                             onChange={handleChange}
@@ -84,12 +84,12 @@ export function Register() {
                     </div>
 
                     <div>
-                        <label className="text-xs font-semibold text-slate-300">Password</label>
+                        <label className="text-xs font-semibold text-gray-700">Password</label>
                         <input
                             name="password"
                             type="password"
                             required
-                            className="mt-1 block w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:ring-primary-500"
+                            className="mt-1 block w-full rounded-xl bg-white border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:ring-emerald-500"
                             value={form.password}
                             onChange={handleChange}
                         />
@@ -97,23 +97,23 @@ export function Register() {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="text-xs font-semibold text-slate-300">Region</label>
+                            <label className="text-xs font-semibold text-gray-700">Region</label>
                             <input
                                 name="region"
                                 type="text"
                                 required
-                                className="mt-1 block w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:ring-primary-500"
+                                className="mt-1 block w-full rounded-xl bg-white border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:ring-emerald-500"
                                 value={form.region}
                                 onChange={handleChange}
                             />
                         </div>
                         <div>
-                            <label className="text-xs font-semibold text-slate-300">Woreda</label>
+                            <label className="text-xs font-semibold text-gray-700">Woreda</label>
                             <input
                                 name="woreda"
                                 type="text"
                                 required
-                                className="mt-1 block w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-slate-100 focus:border-primary-500 focus:ring-primary-500"
+                                className="mt-1 block w-full rounded-xl bg-white border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:ring-emerald-500"
                                 value={form.woreda}
                                 onChange={handleChange}
                             />
@@ -125,15 +125,15 @@ export function Register() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full rounded-full bg-primary-600 py-2.5 text-sm font-semibold text-white shadow-lg hover:bg-primary-500 disabled:opacity-50"
+                        className="w-full rounded-full bg-emerald-600 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-emerald-600/10"
                     >
                         {loading ? "Creating account..." : "Sign up"}
                     </button>
                 </form>
 
-                <div className="text-center text-xs text-slate-400">
+                <div className="text-center text-xs text-gray-500">
                     Already have an account?{" "}
-                    <Link to="/login" className="font-semibold text-primary-400 hover:text-primary-300">
+                    <Link to="/login" className="font-semibold text-emerald-600 hover:text-emerald-700">
                         Sign in
                     </Link>
                 </div>
