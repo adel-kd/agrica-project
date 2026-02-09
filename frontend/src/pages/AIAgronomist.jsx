@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { apiPost, apiUpload } from "../lib/api";
+import { apiPost, apiUpload, API_ASSET_BASE } from "../lib/api";
 import { VoiceRecorder } from "../components/VoiceRecorder";
 
 export function AIAgronomist() {
@@ -107,7 +107,7 @@ export function AIAgronomist() {
                 // Audio playback is handled in component or we play it here
                 // The VoiceRecorder below handles the playback logic or returns the url
                 if (data.audio_url) {
-                  const audio = new Audio(window.location.origin.replace(":5173", ":5000") + data.audio_url);
+                  const audio = new Audio(API_ASSET_BASE + data.audio_url);
                   audio.play().catch(e => console.error("Audio play failed", e));
                 }
               }} />

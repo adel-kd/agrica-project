@@ -40,18 +40,7 @@ export function FarmerDashboard() {
       Object.keys(form).forEach(key => formData.append(key, form[key]));
       imageFiles.forEach(file => formData.append("images", file));
 
-      const token = localStorage.getItem("token");
-
-      const res = await fetch("http://localhost:5000/api/market/listings", {
-        method: "POST",
-        body: formData,
-        headers: token ? { "Authorization": `Bearer ${token}` } : {}
-      });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Failed");
-      }
+      await apiUpload("/market/listings", formData);
 
       setMessage("Your crop has been listed. Gemini is verifying your images...");
       setForm((f) => ({ ...f, cropType: "", quantity: "", expectedPrice: "", location: "", harvestDate: "" }));

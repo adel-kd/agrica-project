@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agrica IVR Demo - AI-Powered Agricultural Support</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: #F0FDF4; border-radius: 8px;">
+                    <img src="/image.png" alt="Agrica IVR Logo" style="width: 100%; height: 100%; object-fit: contain;">
+                </div>
+                <h1 class="logo-title" style="font-size: 1.6rem; font-weight: 700; margin-left: 12px;">Agrica IVR System</h1>
+            </div>
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <a href="/" style="color: #059669; text-decoration: none; font-weight: 600; font-size: 0.9rem;">← Back
+                    to Website</a>
+                <div class="status-badge" id="systemStatus">
+                    <span class="status-dot"></span>
+                    System Ready
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Demo Area -->
+        <main class="demo-section">
+            <div class="demo-card">
+                <h2>Interactive IVR Demo</h2>
+                <p class="subtitle"> AI-Powered Agricultural Support System</p>
+
+                <!-- Scenario Selector -->
+                <div class="scenario-selector">
+                    <label for="scenarioSelect">Select Demo Scenario:</label>
+                    <select id="scenarioSelect" onchange="changeScenario()">
+                        <option value="advice">Agricultural Advice (Crop Protection)</option>
+                        <option value="sell">Sell Crop (Marketplace Listing)</option>
+                    </select>
+                </div>
+
+                <!-- Phone Interface -->
+                <div class="phone-interface">
+                    <div class="phone-screen">
+                        <div class="call-status" id="callStatus">
+                            <div class="status-icon">📞</div>
+                            <div class="status-text">Ready to Call</div>
+                        </div>
+
+                        <div class="conversation-display" id="conversationDisplay">
+                            <div class="welcome-message">
+                                <p>Welcome to the Agrica IVR Demo</p>
+                                <p class="small">Click "Start Call" to begin the demonstration</p>
+                            </div>
+                        </div>
+
+                        <div class="audio-visualizer" id="audioVisualizer">
+                            <div class="bar"></div>
+                            <div class="bar"></div>
+                            <div class="bar"></div>
+                            <div class="bar"></div>
+                            <div class="bar"></div>
+                        </div>
+                    </div>
+
+                    <div class="phone-controls">
+                        <button class="btn btn-primary" id="startCallBtn" onclick="startCall()">
+                            📞 Start Call
+                        </button>
+                        <button class="btn btn-secondary" id="speakBtn" onclick="simulateUserSpeech()" disabled>
+                            🎤 Speak with diffrent languages (e.g Amharic)
+                        </button>
+                        <button class="btn btn-danger" id="endCallBtn" onclick="endCall()" disabled>
+                            ❌ End Call
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technical Flow -->
+            <div class="demo-card">
+                <h3>System Architecture Flow</h3>
+                <div class="flow-diagram">
+                    <div class="flow-step">
+                        <div class="step-icon">📱</div>
+                        <div class="step-content">
+                            <h4>1. Incoming Call</h4>
+                            <p>Farmer calls via Infobip</p>
+                        </div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step">
+                        <div class="step-icon">🎤</div>
+                        <div class="step-content">
+                            <h4>2. Speech-to-Text</h4>
+                            <p>Hasab STT (Amharic)</p>
+                        </div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step">
+                        <div class="step-icon">🤖</div>
+                        <div class="step-content">
+                            <h4>3. AI Processing</h4>
+                            <p>Gemini AI Response</p>
+                        </div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step">
+                        <div class="step-icon">🔊</div>
+                        <div class="step-content">
+                            <h4>4. Text-to-Speech</h4>
+                            <p>Hasab/Google TTS</p>
+                        </div>
+                    </div>
+                    <div class="flow-arrow">→</div>
+                    <div class="flow-step">
+                        <div class="step-icon">✅</div>
+                        <div class="step-content">
+                            <h4>5. Response</h4>
+                            <p>Audio played to farmer</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Logs -->
+            <div class="demo-card">
+                <h3>System Logs</h3>
+                <div class="logs-container" id="logsContainer">
+                    <div class="log-entry info">
+                        <span class="log-time">17:55:00</span>
+                        <span class="log-message">System initialized and ready</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Features -->
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🌍</div>
+                    <h4>Afican Language</h4>
+                    <p>Full support for native African language</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h4>AI-Powered</h4>
+                    <p>Google Gemini for intelligent responses</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📞</div>
+                    <h4>Voice Interface</h4>
+                    <p>Natural conversation via phone</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h4>Real-time</h4>
+                    <p>Instant processing and responses</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="demo.js"></script>
+</body>
+
+</html>
