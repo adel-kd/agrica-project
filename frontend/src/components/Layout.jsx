@@ -50,19 +50,33 @@ export function Layout({ children }) {
             <NavLink to="/market" className={navItemClasses}>
               Marketplace
             </NavLink>
-            <NavLink to="/ai" className={navItemClasses}>
-              Crop Assistant
-            </NavLink>
 
-             <NavLink to="/about" className={navItemClasses}>
-               About
-             </NavLink>
+            {/* Hidden from buyers/guests; only visible to logged-in farmers */}
+            {user && user.role === 'farmer' && (
+              <NavLink to="/ai" className={navItemClasses}>
+                Crop Assistant
+              </NavLink>
+            )}
+
+            <NavLink to="/about" className={navItemClasses}>
+              About
+            </NavLink>
 
             {user && user.role === 'farmer' && (
               <NavLink to="/farmers" className={navItemClasses}>
                 Dashboard
               </NavLink>
             )}
+
+            {/* Demo IVR External Link Button */}
+            <a 
+              href="https://agricavoice.onrender.com/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="px-3 py-2 text-sm font-medium rounded-full transition-colors bg-red-600 text-white hover:bg-red-700 shadow-sm ml-2"
+            >
+              Demo IVR
+            </a>
 
             {!user ? (
               <div className="flex items-center gap-2 ml-4">
@@ -99,6 +113,7 @@ export function Layout({ children }) {
             <span>Marketplace</span>
             <span>Crop support</span>
             <span>Quality checks</span>
+            <span>Adel l <a href="https://www.linkedin.com/in/adel-kedir971/">Adel k </a></span>
           </div>
         </div>
       </footer>
