@@ -1,4 +1,6 @@
-export const API_ASSET_BASE = import.meta.env.VITE_API_ASSET_BASE || "https://agrica-project-1.onrender.com";
+export const API_ASSET_BASE = import.meta.env.VITE_API_ASSET_BASE ||
+//  "https://agrica-project-1.onrender.com";
+ "http://localhost:5001";
 const API_BASE = `${API_ASSET_BASE}/api`;
 
 function getHeaders(contentType = "application/json") {

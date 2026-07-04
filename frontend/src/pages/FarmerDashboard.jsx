@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-
+const ASSET_BASE = import.meta.env.VITE_API_ASSET_BASE;
 const API = "http://localhost:5001/api/market";
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
+
 
 export default function FarmerDashboard() {
   const [form, setForm] = useState({
@@ -278,8 +279,8 @@ export default function FarmerDashboard() {
             <div className="grid gap-4 sm:grid-cols-2">
               {listings.map((l) => {
                 const verified = l.verification?.status === "verified";
-                const firstImage = l.images?.length > 0 ? `http://localhost:5001${l.images[0]}` : null;
-
+                const firstImage =
+                  l.images?.length > 0 ? l.images[0] : null;
                 return (
                   <div
                     key={l._id}
