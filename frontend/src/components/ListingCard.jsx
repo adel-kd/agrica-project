@@ -1,15 +1,14 @@
 import { Link } from "react-router-dom";
-import { API_ASSET_BASE } from "../lib/api";
+// import { API_ASSET_BASE } from "../lib/api";
 
 export function ListingCard({ listing }) {
   const verified =
     listing?.verification?.status === "verified";
 
   const firstImage =
-    listing?.images?.length > 0
-      ? `${API_ASSET_BASE}${listing.images[0]}`
-      : null;
-
+  listing?.images?.length > 0
+    ? listing.images[0]
+    : null;
   return (
     <Link
       to={`/market/${listing?._id}`}

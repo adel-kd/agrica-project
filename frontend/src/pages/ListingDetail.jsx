@@ -119,7 +119,7 @@ export function ListingDetail() {
                 {listing.images.map((url, idx) => (
                   <img
                     key={idx}
-                    src={url.startsWith("http") ? url : `${API_ASSET_BASE}${url}`}
+                    src={url}
                     alt={`Crop ${idx + 1}`}
                     className="h-20 w-full rounded-lg object-cover border border-gray-200"
                   />
