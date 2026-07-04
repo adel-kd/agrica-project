@@ -7,14 +7,14 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        // target: "https://agrica-project-1.onrender.com",
-        target: "http://localhost:5001",
+        target: "https://agrica-ethiopia.onrender.com",
+        // target: "http://localhost:5001",
 
         changeOrigin: true
       },
       "/uploads": {
-        // target: "https://agrica-project-1.onrender.com",
-        target: "http://localhost:5001",
+        target: "https://agrica-ethiopia.onrender.com",
+        // target: "http://localhost:5001",
 
         changeOrigin: true
       }

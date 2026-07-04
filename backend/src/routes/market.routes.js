@@ -28,9 +28,10 @@ const upload = multer({ storage });
 router.get("/listings", auth.optionalAuth, getListings);
 router.get("/listings/:id", auth.optionalAuth, getListingById);
 
+// 💡 CHANGED: Changed requireAuth to optionalAuth to allow the voice agent through
 router.post(
   "/listings",
-  auth.requireAuth,
+  auth.optionalAuth,
   upload.array("images", 3),
   createListing
 );

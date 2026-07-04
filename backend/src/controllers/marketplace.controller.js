@@ -33,7 +33,6 @@ exports.getListings = async (req, res) => {
   try {
     const filter = {};
 
-    // Filter by farmer
     if (
       req.query.farmerId &&
       isValidObjectId(req.query.farmerId)
@@ -41,7 +40,6 @@ exports.getListings = async (req, res) => {
       filter.farmer = req.query.farmerId;
     }
 
-    // Search by crop type
     if (req.query.cropType) {
       filter.cropType = {
         $regex: req.query.cropType.trim(),
@@ -49,7 +47,6 @@ exports.getListings = async (req, res) => {
       };
     }
 
-    // Search by location
     if (req.query.location) {
       filter.location = {
         $regex: req.query.location.trim(),
@@ -57,7 +54,6 @@ exports.getListings = async (req, res) => {
       };
     }
 
-    // Verified only
     if (req.query.verified === "true") {
       filter.qualityBadge = true;
     }
@@ -124,7 +120,7 @@ exports.getListingById = async (req, res) => {
 };
 
 /**
- * CREATE LISTING
+ * CREATE LISTING (Supports standard Web App & Standalone Voice Agent flows)
  */
 exports.createListing = async (req, res) => {
   try {
@@ -134,7 +130,8 @@ exports.createListing = async (req, res) => {
       unit,
       expectedPrice,
       location,
-      harvestDate
+      harvestDate,
+      phoneNumber // 🎙️ Capture phone number parameter if provided by voice agent
     } = req.body;
 
     if (
@@ -150,13 +147,12 @@ exports.createListing = async (req, res) => {
 
     const farmer = req.user;
 
-    if (!farmer) {
-      return res.status(401).json({
-        error: "Unauthorized"
-      });
-    }
+    // 💡 CONDITIONAL AGENT LOGIC: Build metadata safe for your DB Schema and UI
+    const finalFarmerId = farmer ? farmer._id : new mongoose.Types.ObjectId(); 
+    const finalFarmerName = farmer ? farmer.fullName : "Unknown Farmer (Voice Agent)";
+    const finalPhoneNumber = phoneNumber || req.body.phone || (farmer ? farmer.phoneNumber : "No Phone Provided");
 
-    // Cloudinary URLs
+    // Cloudinary URLs handling
     const imageFiles = req.files || [];
     const imageUrls = imageFiles.map((file) => file.path);
 
@@ -164,7 +160,7 @@ exports.createListing = async (req, res) => {
     let score = 0;
     let successMessage = "";
 
-    // Verify first image if uploaded
+    // Run Gemini check ONLY if an image is actually uploaded
     if (imageUrls.length > 0) {
       const result = await verifyCropImage(
         imageUrls[0],
@@ -173,36 +169,38 @@ exports.createListing = async (req, res) => {
 
       if (!result.detected_crop) {
         return res.status(400).json({
-          error:
-            "Uploaded image is not recognized as a crop"
+          error: "Uploaded image is not recognized as a crop"
         });
       }
 
       if (!result.matches_crop) {
         verificationStatus = "failed";
         score = result.confidence || 0;
-        successMessage =
-          "Crop does not match listing type";
+        successMessage = "Crop does not match listing type";
       } else if (!result.is_clear) {
         return res.status(400).json({
-          error:
-            "Low-resolution image. Please upload a clearer one"
+          error: "Low-resolution image. Please upload a clearer one"
         });
       } else {
         verificationStatus = "verified";
         score = result.confidence || 100;
-        successMessage =
-          "Congratulations! Your crop received a quality badge";
+        successMessage = "Congratulations! Your crop received a quality badge";
 
-        farmer.verifiedFarmer = true;
-        await farmer.save();
+        if (farmer) {
+          farmer.verifiedFarmer = true;
+          await farmer.save();
+        }
       }
+    } else {
+      // If voice agent submits without images, default message setup
+      successMessage = "Listing created successfully via voice";
     }
 
     const listing = await CropListing.create({
-      farmer: farmer._id,
-      farmerName: farmer.fullName,
-      phoneNumber: farmer.phoneNumber,
+      // 💡 If unauthenticated, pass the random ID so populate doesn't completely break, or null depending on your schema strictness
+      farmer: farmer ? farmer._id : null, 
+      farmerName: finalFarmerName,
+      phoneNumber: finalPhoneNumber,
 
       cropType,
       quantity: Number(quantity),
@@ -215,11 +213,8 @@ exports.createListing = async (req, res) => {
 
       images: imageUrls,
 
-      isGeminiVerified:
-        verificationStatus === "verified",
-
-      qualityBadge:
-        verificationStatus === "verified",
+      isGeminiVerified: verificationStatus === "verified",
+      qualityBadge: verificationStatus === "verified",
 
       verification: {
         status: verificationStatus,
@@ -230,21 +225,23 @@ exports.createListing = async (req, res) => {
                 "AI quality check passed",
                 "Matches listed crop type"
               ]
-            : []
+            : ["No image provided for validation"]
       }
     });
 
-    const populated = await CropListing.findById(
-      listing._id
-    ).populate(
-      "farmer",
-      "fullName phoneNumber region woreda verifiedFarmer"
-    );
+    // Populate operation
+    let populated = null;
+    if (listing.farmer) {
+      populated = await CropListing.findById(listing._id).populate(
+        "farmer",
+        "fullName phoneNumber region woreda verifiedFarmer"
+      );
+    } else {
+      populated = listing;
+    }
 
     res.status(201).json({
-      message:
-        successMessage ||
-        "Listing created successfully",
+      message: successMessage,
       listing: populated
     });
   } catch (err) {
@@ -281,31 +278,16 @@ exports.updateListing = async (req, res) => {
       req.user._id.toString()
     ) {
       return res.status(403).json({
-        error:
-          "Unauthorized to update this listing"
+        error: "Unauthorized to update this listing"
       });
     }
 
-    listing.cropType =
-      req.body.cropType || listing.cropType;
-
-    listing.quantity =
-      Number(req.body.quantity) ||
-      listing.quantity;
-
-    listing.unit =
-      req.body.unit || listing.unit;
-
-    listing.expectedPrice =
-      Number(req.body.expectedPrice) ||
-      listing.expectedPrice;
-
-    listing.location =
-      req.body.location || listing.location;
-
-    listing.harvestDate =
-      req.body.harvestDate ||
-      listing.harvestDate;
+    listing.cropType = req.body.cropType || listing.cropType;
+    listing.quantity = Number(req.body.quantity) || listing.quantity;
+    listing.unit = req.body.unit || listing.unit;
+    listing.expectedPrice = Number(req.body.expectedPrice) || listing.expectedPrice;
+    listing.location = req.body.location || listing.location;
+    listing.harvestDate = req.body.harvestDate || listing.harvestDate;
 
     await listing.save();
 
@@ -347,8 +329,7 @@ exports.deleteListing = async (req, res) => {
       req.user._id.toString()
     ) {
       return res.status(403).json({
-        error:
-          "Unauthorized to delete this listing"
+        error: "Unauthorized to delete this listing"
       });
     }
 
