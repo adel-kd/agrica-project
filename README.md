@@ -16,6 +16,8 @@ Future vision:
 Each localized for language, crops, and market systems.
 
 ---
+# demo
+https://agricaeth.netlify.app/
 
 # Inspiration
 
@@ -152,7 +154,7 @@ Each with local languages, crops, and market systems.
 ## Clone repository
 
 ```bash
-git clone https://github.com/yourusername/AGRICA.git
+git clone https://github.com/adel-kd/agri-project.git
 cd AGRICA
 ```
 
@@ -174,7 +176,7 @@ npm run dev
 
 ---
 
-# Demo
+# Demo vedio
 
 https://www.youtube.com/watch?v=80sBQy6GRno
 
