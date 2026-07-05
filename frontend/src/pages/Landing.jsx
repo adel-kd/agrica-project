@@ -1,6 +1,27 @@
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 
 export function Landing() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const syncUser = () => {
+      const storedUser = localStorage.getItem("user");
+      const user = storedUser ? JSON.parse(storedUser) : null;
+      setUser(user);
+    };
+
+    syncUser();
+
+    window.addEventListener("storage", syncUser);
+    window.addEventListener("agrica-auth-change", syncUser);
+
+    return () => {
+      window.removeEventListener("storage", syncUser);
+      window.removeEventListener("agrica-auth-change", syncUser);
+    };
+  }, []);
+
   return (
     <div className="relative overflow-hidden py-10 sm:py-12 md:py-20">
       {/* Background blobs (unchanged, just safe on mobile) */}
@@ -84,12 +105,23 @@ export function Landing() {
                 Browse crops
               </Link>
 
-              <Link
-                to="/ai"
-                className="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-50"
-              >
-                Ask crop questions
-              </Link>
+              {!user && (
+                <Link
+                  to="/register"
+                  className="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                >
+                  Join us
+                </Link>
+              )}
+
+              {user && user.role === "farmer" && (
+                <Link
+                  to="/ai"
+                  className="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-50"
+                >
+                  Ask crop questions
+                </Link>
+              )}
             </div>
 
             {/* TEXT BLOCKS FIX */}

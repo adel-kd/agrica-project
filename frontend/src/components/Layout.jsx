@@ -4,9 +4,13 @@ import { useEffect, useState } from "react";
 const navItemClasses =
   "px-3 py-2 text-sm font-medium rounded-full transition-colors hover:bg-emerald-50 text-gray-700 hover:text-emerald-700";
 
+const mobileNavItemClasses =
+  "block w-full px-4 py-3 text-sm font-medium rounded-2xl transition-all duration-300 ease-in-out hover:bg-emerald-50 hover:text-emerald-700 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500";
+
 export function Layout({ children }) {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const syncUser = () => {
@@ -30,6 +34,11 @@ export function Layout({ children }) {
     setUser(null);
     window.dispatchEvent(new Event("agrica-auth-change"));
     navigate("/login");
+    setMobileMenuOpen(false);
+  };
+
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
   };
 
   return (
@@ -73,7 +82,7 @@ export function Layout({ children }) {
               href="https://agricavoice.onrender.com/" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="px-3 py-2 text-sm font-medium rounded-full transition-colors bg-red-600 text-white hover:bg-red-700 shadow-sm ml-2"
+              className="px-4 py-2 text-xs font-semibold rounded-full transition-colors bg-red-600 text-white hover:bg-red-700 shadow-sm ml-2"
             >
               Demo IVR
             </a>
@@ -99,6 +108,109 @@ export function Layout({ children }) {
               </div>
             )}
           </nav>
+
+          {/* Mobile hamburger button */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            aria-expanded={mobileMenuOpen}
+            aria-label={mobileMenuOpen ? "Close main menu" : "Open main menu"}
+            className="md:hidden relative h-10 w-10 flex items-center justify-center rounded-full transition-colors duration-300 ease-in-out hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          >
+            <span className="sr-only">Toggle navigation menu</span>
+            <div className="relative h-5 w-6 flex flex-col justify-between">
+              <span
+                className={`block h-0.5 w-full bg-emerald-700 rounded-full transition-all duration-300 ease-in-out ${
+                  mobileMenuOpen ? "rotate-45 translate-y-[9px]" : ""
+                }`}
+              />
+              <span
+                className={`block h-0.5 w-full bg-emerald-700 rounded-full transition-all duration-300 ease-in-out ${
+                  mobileMenuOpen ? "opacity-0" : "opacity-100"
+                }`}
+              />
+              <span
+                className={`block h-0.5 w-full bg-emerald-700 rounded-full transition-all duration-300 ease-in-out ${
+                  mobileMenuOpen ? "-rotate-45 -translate-y-[9px]" : ""
+                }`}
+              />
+            </div>
+          </button>
+        </div>
+
+        {/* Mobile dropdown panel */}
+        <div
+          className={`md:hidden absolute left-0 right-0 top-full origin-top transition-all duration-300 ease-in-out ${
+            mobileMenuOpen
+              ? "opacity-100 translate-y-0 scale-100 pointer-events-auto"
+              : "opacity-0 -translate-y-2 scale-95 pointer-events-none"
+          }`}
+        >
+          <div className="mx-auto w-full bg-white shadow-xl rounded-b-3xl border-t border-gray-100 px-4 py-5 space-y-1">
+            <NavLink to="/market" className={mobileNavItemClasses} onClick={closeMobileMenu}>
+              Marketplace
+            </NavLink>
+
+            {user && user.role === 'farmer' && (
+              <NavLink to="/ai" className={mobileNavItemClasses} onClick={closeMobileMenu}>
+                Crop Assistant
+              </NavLink>
+            )}
+
+            <NavLink to="/about" className={mobileNavItemClasses} onClick={closeMobileMenu}>
+              About
+            </NavLink>
+
+            {user && user.role === 'farmer' && (
+              <NavLink to="/farmers" className={mobileNavItemClasses} onClick={closeMobileMenu}>
+                Dashboard
+              </NavLink>
+            )}
+
+            <a
+              href="https://agricavoice.onrender.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={closeMobileMenu}
+              className="block w-full text-center px-4 py-2 text-sm font-medium rounded-2xl transition-all duration-300 ease-in-out bg-red-600 text-white hover:bg-red-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+            >
+              Demo IVR
+            </a>
+
+            <div className="pt-3 mt-3 border-t border-gray-100">
+              {!user ? (
+                <div className="flex flex-col gap-2">
+                  <Link
+                    to="/login"
+                    onClick={closeMobileMenu}
+                    className="block w-full text-center px-4 py-3 text-sm font-semibold text-gray-600 rounded-2xl transition-all duration-300 ease-in-out hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    to="/register"
+                    onClick={closeMobileMenu}
+                    className="block w-full text-center px-4 py-3 rounded-2xl bg-emerald-600 text-sm font-semibold text-white shadow-sm transition-all duration-300 ease-in-out hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    Sign up
+                  </Link>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col px-4">
+                    <span className="text-sm font-semibold text-gray-800">{user.fullName}</span>
+                    <span className="text-[11px] text-gray-500 capitalize">{user.role}</span>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm text-gray-600 transition-all duration-300 ease-in-out hover:bg-gray-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    Log out
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </header>
 
@@ -113,7 +225,7 @@ export function Layout({ children }) {
             <span>Marketplace</span>
             <span>Crop support</span>
             <span>Quality checks</span>
-            <span>Adel l <a href="https://www.linkedin.com/in/adel-kedir971/">Adel k </a></span>
+            <span className="text-green-500">BY <a href="https://personal-web-43w7.vercel.app/">Adel k </a></span>
           </div>
         </div>
       </footer>
