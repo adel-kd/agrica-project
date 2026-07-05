@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+
 const ASSET_BASE = import.meta.env.VITE_API_ASSET_BASE;
-const API = "https://agrica-ethiopia.onrender.com/api/market";
+const API = `${import.meta.env.VITE_API_BASE_URL}/market`;
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
